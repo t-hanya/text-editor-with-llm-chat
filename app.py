@@ -40,6 +40,21 @@ chat_container = columns[0].container(height=740)
 
 editor_ui(columns[1:], st.session_state.messages, st.session_state.editor)
 
+# chat action buttons
+with chat_container:
+    btn_cols = st.columns(3)
+    messages = st.session_state.messages
+    if btn_cols[0].button('Clear', key='clear', use_container_width=True):
+        messages.clear()
+    if btn_cols[1].button('Retry', key='retry', use_container_width=True):
+        if messages and messages[-1]['role'] == 'assistant':
+            messages.pop(-1)
+    if btn_cols[2].button('Remove', key='remove', use_container_width=True):
+        while messages:
+            last = messages.pop(-1)
+            if last['role'] == 'user':
+                break
+
 if user_msg := st.chat_input():
     st.session_state.messages.append({'role': 'user', 'content': user_msg})
 
