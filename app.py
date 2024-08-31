@@ -17,9 +17,22 @@ st.set_page_config(
 
 
 def generate() -> 'Generator[str, None, None]':
+    # embed reference contents
+    ref_msgs = []
+    if st.session_state.chat_references:
+        editor = st.session_state.editor
+        ref_contents = '\n\n-----\n\n'.join(
+            [editor.files[fname].content
+             for fname in st.session_state.chat_references]
+        )
+        ref_msgs = [
+            {'role': 'user', 'content': '以下のファイルの内容を参考にしてください:\n\n' + ref_contents},
+            {'role': 'assistant', 'content': '分かりました。'}
+        ]
+    # chat completion
     stream = ollama.chat(
         model='gemma2',
-        messages=st.session_state.messages,
+        messages=(ref_msgs + st.session_state.messages),
         stream=True
     )
     content = ''
@@ -31,6 +44,7 @@ def generate() -> 'Generator[str, None, None]':
 
 
 if 'messages' not in st.session_state:
+    st.session_state.chat_references = []
     st.session_state.messages = []
     st.session_state.editor = Editor(columns=2)
 
@@ -40,9 +54,18 @@ chat_container = columns[0].container(height=740)
 
 editor_ui(columns[1:], st.session_state.messages, st.session_state.editor)
 
-# chat action buttons
 with chat_container:
-    btn_cols = st.columns(3)
+    # chat references
+    st.multiselect(
+        'Chat references',
+        list(st.session_state.editor.files.keys()),
+        placeholder='Add to context',
+        key='chat_references',
+        label_visibility='collapsed'
+    )
+
+    # chat action buttons
+    btn_cols = st.columns(4)
     messages = st.session_state.messages
     if btn_cols[0].button('Clear', key='clear', use_container_width=True):
         messages.clear()
