@@ -16,6 +16,9 @@ st.set_page_config(
 )
 
 
+NUM_EDITOR_COLS = 1
+
+
 def generate() -> 'Generator[str, None, None]':
     # embed reference contents
     ref_msgs = []
@@ -46,9 +49,9 @@ def generate() -> 'Generator[str, None, None]':
 if 'messages' not in st.session_state:
     st.session_state.chat_references = []
     st.session_state.messages = []
-    st.session_state.editor = Editor(columns=2)
+    st.session_state.editor = Editor(columns=NUM_EDITOR_COLS)
 
-columns = st.columns(3)
+columns = st.columns(1 + NUM_EDITOR_COLS)
 
 chat_container = columns[0].container(height=740)
 
@@ -77,6 +80,8 @@ with chat_container:
             last = messages.pop(-1)
             if last['role'] == 'user':
                 break
+    with btn_cols[3]:
+        use_markdown = st.toggle('Markdown', value=True, key='enalbe-markdown')
 
 if user_msg := st.chat_input():
     st.session_state.messages.append({'role': 'user', 'content': user_msg})
@@ -84,7 +89,10 @@ if user_msg := st.chat_input():
 with chat_container:
     for msg in st.session_state.messages:
         with st.chat_message(msg['role']):
-            st.markdown(msg['content'])
+            if use_markdown:
+                st.markdown(msg['content'])
+            else:
+                st.code(msg['content'], language='markdown', wrap_lines=True)
 
 if (st.session_state.messages and
     st.session_state.messages[-1]['role'] == 'user'):
