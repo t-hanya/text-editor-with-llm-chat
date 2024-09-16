@@ -34,8 +34,8 @@ def generate() -> 'Generator[str, None, None]':
              for fname in st.session_state.chat_references]
         )
         ref_msgs = [
-            {'role': 'user', 'content': '以下のファイルの内容を参考にしてください:\n\n' + ref_contents},
-            {'role': 'assistant', 'content': '分かりました。'}
+            {'role': 'user', 'content': 'Please refer to the contents of the following file.:\n\n' + ref_contents},
+            {'role': 'assistant', 'content': 'OK.'}
         ]
     # chat completion
     stream = ollama.chat(
