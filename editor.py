@@ -94,8 +94,18 @@ class Editor:
                 unused_params.append(pname)
         return assignment, unused_params
 
+    @property
+    def not_opened_files(self) -> list[str]:
+        opened_files = set()
+        for column in self.columns:
+            for tab in column.tabs:
+                opened_files.add(tab.file.name)
+        return [fname for fname in self.files if fname not in opened_files]
 
-def editor_ui(columns: list, messages: list[dict], editor: Editor):
+def editor_ui(columns: list,
+              messages: list[dict],
+              editor: Editor,
+              page_height: int = 760):
 
     @st.dialog("Create new file")
     def _create_new_file_dialog(col_idx: int) -> None:
@@ -129,7 +139,7 @@ def editor_ui(columns: list, messages: list[dict], editor: Editor):
             tab.text_area(
                 'Content',
                 tab_data.file.content,
-                height=630,
+                height=page_height - 80,
                 key='txtarea-' + tab_data.file.name,
                 on_change=partial(_on_text_change, tab=tab_data),
                 label_visibility="collapsed",
@@ -151,7 +161,7 @@ def editor_ui(columns: list, messages: list[dict], editor: Editor):
         with tabs[-1]:
             if st.button('New file', key=f'col{col_idx}-new-btn'):
                 _create_new_file_dialog(col_idx)
-            for fname in editor.files:
+            for fname in editor.not_opened_files:
                 if st.button(f'Open: {fname}', key=f'col{col_idx}-open-{fname}'):
                     file = editor.files[fname]
                     editor.columns[col_idx].tabs.append(FileTab(file))

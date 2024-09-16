@@ -12,11 +12,16 @@ from editor import editor_ui
 st.set_page_config(
     page_title='AI Editor',
     page_icon='⚡️',
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 
 NUM_EDITOR_COLS = 1
+MODEL_DEFS = {
+    'gemma2': 'gemma2',
+    'command-r': 'command-r:35b-08-2024-q4_K_M',
+}
 
 
 def generate() -> 'Generator[str, None, None]':
@@ -34,7 +39,7 @@ def generate() -> 'Generator[str, None, None]':
         ]
     # chat completion
     stream = ollama.chat(
-        model='gemma2',
+        model=MODEL_DEFS[st.session_state.model],
         messages=(ref_msgs + st.session_state.messages),
         stream=True
     )
@@ -47,15 +52,25 @@ def generate() -> 'Generator[str, None, None]':
 
 
 if 'messages' not in st.session_state:
+    st.session_state.model = 'gemma2'
     st.session_state.chat_references = []
     st.session_state.messages = []
     st.session_state.editor = Editor(columns=NUM_EDITOR_COLS)
 
+
+with st.sidebar:
+    # model selection
+    st.radio('Model', list(MODEL_DEFS.keys()), key='model')
+    # page height
+    page_height = st.number_input(
+        'Page height', min_value=500, max_value=1000, value=760)
+
+
 columns = st.columns(1 + NUM_EDITOR_COLS)
 
-chat_container = columns[0].container(height=740)
+chat_container = columns[0].container(height=page_height)
 
-editor_ui(columns[1:], st.session_state.messages, st.session_state.editor)
+editor_ui(columns[1:], st.session_state.messages, st.session_state.editor, page_height=page_height)
 
 with chat_container:
     # chat references
@@ -83,8 +98,9 @@ with chat_container:
     with btn_cols[3]:
         use_markdown = st.toggle('Markdown', value=True, key='enalbe-markdown')
 
-if user_msg := st.chat_input():
-    st.session_state.messages.append({'role': 'user', 'content': user_msg})
+with columns[0]:
+    if user_msg := st.chat_input():
+        st.session_state.messages.append({'role': 'user', 'content': user_msg})
 
 with chat_container:
     for msg in st.session_state.messages:
