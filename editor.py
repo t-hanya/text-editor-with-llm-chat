@@ -10,7 +10,6 @@ import re
 import streamlit as st
 
 
-TEMPLATE_PARAM_PATTERN = re.compile(r"{{\s*([a-zA-Z]\w*)\s*}}")  # {{paramname}}
 TEMPLATE_BLOCK_PATTERN = re.compile(r"(## \d+\..*?)(?=(## \d+\.)|$)", flags=re.DOTALL)
 
 
@@ -24,7 +23,6 @@ class File:
 class Block:
     header: str
     content: str
-    parameters: list[str]
 
 
 @dataclass
@@ -33,9 +31,9 @@ class FileTab:
     blocks: list[Block] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        self.update_params_and_steps()
+        self.update_steps()
 
-    def update_params_and_steps(self) -> None:
+    def update_steps(self) -> None:
         content = self.file.content.strip()
         matches = TEMPLATE_BLOCK_PATTERN.finditer(content)
 
@@ -48,8 +46,7 @@ class FileTab:
                 continue
             header = lines[0].strip()
             body = '\n'.join(lines[1:]).strip()
-            params = TEMPLATE_PARAM_PATTERN.findall(body)
-            blocks.append(Block(header, body, params))
+            blocks.append(Block(header, body))
         self.blocks = blocks
 
 
@@ -81,19 +78,6 @@ class Editor:
         with path.open('w') as f:
             f.write(self.files[file_name].content)
 
-    def assign_params(self, param_names: list[str]
-                      ) -> tuple[dict[str, str], list[str]]:
-        unused_params = []
-        assignment = {}
-        contents = {Path(fname).stem: file.content
-                    for fname, file in self.files.items()}
-        for pname in param_names:
-            if pname in contents:
-                assignment[pname] = contents[pname]
-            else:
-                unused_params.append(pname)
-        return assignment, unused_params
-
     @property
     def not_opened_files(self) -> list[str]:
         opened_files = set()
@@ -124,10 +108,7 @@ def editor_ui(columns: list,
         if text != editor.files[fname].content:
             editor.files[fname].content = text
             editor.save_file(fname)
-            tab.update_params_and_steps()
-
-    def _on_step_exec_button(xxx):
-        pass
+            tab.update_steps()
 
     for col_idx, (col, col_data) in enumerate(zip(columns, editor.columns)):
         tabs = col.tabs([tab.file.name for tab in col_data.tabs] + ['＋'])
@@ -150,12 +131,7 @@ def editor_ui(columns: list,
             for col, block in zip(btn_cols, tab_data.blocks):
                 key = f'btn-{tab_data.file.name}-{block.header}'
                 if col.button(block.header, key=key, use_container_width=True):
-                    filled, unfilled = editor.assign_params(block.parameters)
-                    if unfilled:
-                        # invoke dialog to fill unfilled params
-                        pass
-                    else:
-                        messages.append({'role': 'user', 'content': block.content})
+                    messages.append({'role': 'user', 'content': block.content})
 
         # file open tab
         with tabs[-1]:

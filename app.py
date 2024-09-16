@@ -2,6 +2,8 @@
 AI editor app main.
 """
 
+from collections.abc import Generator
+
 import streamlit as st
 import ollama
 
@@ -20,11 +22,11 @@ st.set_page_config(
 NUM_EDITOR_COLS = 1
 MODEL_DEFS = {
     'gemma2': 'gemma2',
-    'command-r': 'command-r:35b-08-2024-q4_K_M',
+    # add optional models here.
 }
 
 
-def generate() -> 'Generator[str, None, None]':
+def generate() -> Generator[str, None, None]:
     # embed reference contents
     ref_msgs = []
     if st.session_state.chat_references:
@@ -52,7 +54,7 @@ def generate() -> 'Generator[str, None, None]':
 
 
 if 'messages' not in st.session_state:
-    st.session_state.model = 'gemma2'
+    st.session_state.model = list(MODEL_DEFS.keys())[0]
     st.session_state.chat_references = []
     st.session_state.messages = []
     st.session_state.editor = Editor(columns=NUM_EDITOR_COLS)
